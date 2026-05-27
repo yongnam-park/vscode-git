@@ -3,13 +3,14 @@ import pandas as pd
 from datetime import datetime
 import time
 
-def simulate_lmea_analysis(size, panel, resolution):
+@st.cache_data
+def simulate_lmea_analysis(size: float, panel: str, resolution: str) -> float:
     """
     입력된 사양을 기반으로 가상의 LMEA 분석 결과를 생성하는 함수입니다.
-    실제 환경에서는 여기에 ML 모델 호출 로직이 들어갑니다.
+    @st.cache_data를 사용하여 동일한 입력에 대해 재계산을 방지합니다.
     """
     with st.spinner('LMEA AI 모델이 사양을 분석 중입니다...'):
-        time.sleep(1.5)  # 분석 시뮬레이션 시간
+        time.sleep(1.0)  # 분석 시뮬레이션 시간
         
     score = 85.5 if panel == "OLED" else 78.2
     if size > 50:
@@ -42,7 +43,7 @@ def main():
     st.subheader("Screen 사양 정보 입력")
     st.write("분석하거나 등록하고 싶은 Screen의 상세 정보를 아래에 입력해 주세요.")
 
-    # 입력 폼 구성
+    # 입력 폼 구성 - 데이터 입력을 그룹화하여 관리
     with st.form("screen_info_form"):
         col1, col2 = st.columns(2)
         
@@ -113,9 +114,10 @@ def main():
                 mime="text/csv",
             )
         with col_clr:
-            if st.button("🗑️ 모든 이력 삭제"):
-                st.session_state.history = []
-                st.rerun()
+            if st.session_state.history:
+                if st.button("🗑️ 모든 이력 삭제", key="btn_clear_history"):
+                    st.session_state.history = []
+                    st.rerun()
 
 if __name__ == "__main__":
     main()
