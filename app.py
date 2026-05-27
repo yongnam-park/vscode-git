@@ -18,6 +18,55 @@ def simulate_lmea_analysis(size: float, panel: str, resolution: str) -> float:
     
     return round(score, 1)
 
+def render_sidebar():
+    """사이드바 UI를 렌더링합니다."""
+    with st.sidebar:
+        st.title("⚙️ 시스템 상태")
+        st.success("엔진 가동 중")
+        st.caption("📁 현재 경로: `00-tutorial` | 🌿 Branch: `main`")
+        st.info(f"마지막 업데이트: {datetime.now().strftime('%H:%M:%S')}")
+        if st.button("🔄 앱 강제 새로고침"):
+            st.rerun()
+
+def render_input_form():
+    """입력 폼 UI를 렌더링하고 사용자 입력을 반환합니다."""
+    with st.form("screen_info_form"):
+        col1, col2 = st.columns(2)
+        with col1:
+            screen_size = st.number_input("화면 크기 (inch)", min_value=10.0, max_value=150.0, value=32.0, step=0.1)
+            resolution = st.selectbox("해상도", ["FHD (1920x1080)", "QHD (2560x1440)", "UHD/4K (3840x2160)", "8K", "기타"])
+        with col2:
+            panel_type = st.radio("패널 종류", ["OLED", "LCD", "Micro LED", "Mini LED"])
+            refresh_rate = st.slider("주사율 (Hz)", 60, 360, 144)
+        
+        additional_specs = st.text_area("기타 추가 사양 정보", placeholder="예: HDR10 지원, 응답속도 1ms 등")
+        submit_button = st.form_submit_button(label="정보 제출 및 분석 요청")
+        
+    return submit_button, screen_size, resolution, panel_type, refresh_rate, additional_specs
+
+def render_history_section():
+    """이력 확인 및 다운로드 섹션을 렌더링합니다."""
+    if st.session_state.history:
+        st.markdown("---")
+        st.subheader("📊 입력 이력 확인 및 내보내기")
+        
+        df = pd.DataFrame(st.session_state.history)
+        st.dataframe(df, use_container_width=True)
+
+        col_dl, col_clr = st.columns([1, 1])
+        with col_dl:
+            csv = df.to_csv(index=False).encode('utf-8-sig')
+            st.download_button(
+                label="📥 이력을 CSV로 다운로드",
+                data=csv,
+                file_name=f"lmea_history_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                mime="text/csv",
+            )
+        with col_clr:
+            if st.button("🗑️ 모든 이력 삭제", key="btn_clear_history"):
+                st.session_state.history = []
+                st.rerun()
+
 def main():
     # 페이지 설정 및 제목
     st.set_page_config(
@@ -31,34 +80,14 @@ def main():
         st.session_state.history = []
     
     # 사이드바에 현재 상태 표시 (앱이 살아있는지 확인용)
-    with st.sidebar:
-        st.title("⚙️ 시스템 상태")
-        st.success(f"엔진 가동 중")
-        st.info(f"마지막 업데이트: {datetime.now().strftime('%H:%M:%S')}")
-        if st.button("🔄 앱 강제 새로고침"):
-            st.rerun()
+    render_sidebar()
 
     st.title("📺 LMEA Model Custom Page")
     st.markdown("---")
     st.subheader("Screen 사양 정보 입력")
-    st.write("분석하거나 등록하고 싶은 Screen의 상세 정보를 아래에 입력해 주세요.")
 
-    # 입력 폼 구성 - 데이터 입력을 그룹화하여 관리
-    with st.form("screen_info_form"):
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            screen_size = st.number_input("화면 크기 (inch)", min_value=10.0, max_value=150.0, value=32.0, step=0.1)
-            resolution = st.selectbox("해상도", ["FHD (1920x1080)", "QHD (2560x1440)", "UHD/4K (3840x2160)", "8K", "기타"])
-            
-        with col2:
-            panel_type = st.radio("패널 종류", ["OLED", "LCD", "Micro LED", "Mini LED"])
-            refresh_rate = st.slider("주사율 (Hz)", 60, 360, 144)
-
-        additional_specs = st.text_area("기타 추가 사양 정보", placeholder="예: HDR10 지원, 응답속도 1ms 등")
-        
-        # 제출 버튼
-        submit_button = st.form_submit_button(label="정보 제출 및 분석 요청")
+    # 입력 폼 호출
+    submit_button, screen_size, resolution, panel_type, refresh_rate, additional_specs = render_input_form()
 
     # 결과 출력
     if submit_button:
@@ -97,27 +126,7 @@ def main():
         st.balloons()
 
     # 입력 이력 및 다운로드 섹션
-    if st.session_state.history:
-        st.markdown("---")
-        st.subheader("📊 입력 이력 확인 및 내보내기")
-        
-        df = pd.DataFrame(st.session_state.history)
-        st.dataframe(df, use_container_width=True)
-
-        col_dl, col_clr = st.columns([1, 1])
-        with col_dl:
-            csv = df.to_csv(index=False).encode('utf-8-sig')
-            st.download_button(
-                label="📥 이력을 CSV로 다운로드",
-                data=csv,
-                file_name=f"lmea_history_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                mime="text/csv",
-            )
-        with col_clr:
-            if st.session_state.history:
-                if st.button("🗑️ 모든 이력 삭제", key="btn_clear_history"):
-                    st.session_state.history = []
-                    st.rerun()
+    render_history_section()
 
 if __name__ == "__main__":
     main()
