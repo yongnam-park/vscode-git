@@ -19,7 +19,6 @@ def simulate_lmea_analysis(size, panel, resolution):
 
 def main():
     # 페이지 설정 및 제목
-    st.set_page_config(page_title="LMEA Model Page", page_icon="📺", layout="centered")
     st.set_page_config(
         page_title="LMEA Model Page", 
         page_icon="📺", 
