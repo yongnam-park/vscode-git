@@ -1,22 +1,11 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-import time
+import os
 
-@st.cache_data
-def simulate_lmea_analysis(size: float, panel: str, resolution: str) -> float:
-    """
-    입력된 사양을 기반으로 가상의 LMEA 분석 결과를 생성하는 함수입니다.
-    @st.cache_data를 사용하여 동일한 입력에 대해 재계산을 방지합니다.
-    """
-    with st.spinner('LMEA AI 모델이 사양을 분석 중입니다...'):
-        time.sleep(1.0)  # 분석 시뮬레이션 시간
-        
-    score = 85.5 if panel == "OLED" else 78.2
-    if size > 50:
-        score += 5.0
-    
-    return round(score, 1)
+# 내가 만든 logic.py에서 함수들을 불러옵니다.
+from logic import simulate_lmea_analysis
+from storage import load_history, save_to_csv, delete_history
 
 def main():
     # 페이지 설정 및 제목
@@ -27,8 +16,9 @@ def main():
         initial_sidebar_state="expanded"
     )
 
+    # 초기 실행 시 파일에서 데이터 불러오기
     if "history" not in st.session_state:
-        st.session_state.history = []
+        st.session_state.history = load_history()
     
     # 사이드바에 현재 상태 표시 (앱이 살아있는지 확인용)
     with st.sidebar:
@@ -69,8 +59,10 @@ def main():
         - 해상도/주사율: {resolution} / {refresh_rate}Hz
         - 기타 사양: {additional_specs if additional_specs else '없음'}
         """)
-        # 분석 프로세스 시작
-        analysis_score = simulate_lmea_analysis(screen_size, panel_type, resolution)
+        
+        # UI와 분석 로직의 결합 (spinner는 UI에서 담당)
+        with st.spinner('LMEA AI 모델이 사양을 분석 중입니다...'):
+            analysis_score = simulate_lmea_analysis(screen_size, panel_type, resolution)
         
         # 데이터 저장
         new_data = {
@@ -82,6 +74,11 @@ def main():
             "Score": analysis_score
         }
         st.session_state.history.append(new_data)
+        
+        try:
+            save_to_csv(new_data)
+        except Exception as e:
+            st.error(f"데이터 파일 저장 실패: {e}")
         
         st.success(f"✅ 분석이 완료되었습니다! (AI Score: {analysis_score})")
         
@@ -121,6 +118,7 @@ def main():
             )
         with col_clr:
             if st.button("🗑️ 모든 이력 삭제", key="btn_clear_history"):
+                delete_history()
                 st.session_state.history = []
                 st.rerun()
 

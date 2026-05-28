@@ -1,0 +1,7 @@
+# 프로젝트 전체에서 사용하는 설정값(상수)들
+HISTORY_FILE = "history.csv"
+
+BASE_SCORE_OLED = 85.5
+BASE_SCORE_LCD = 78.2
+LARGE_SCREEN_BONUS = 5.0
+SIZE_THRESHOLD = 50.0
