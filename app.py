@@ -104,6 +104,12 @@ def main():
         df = pd.DataFrame(st.session_state.history)
         st.dataframe(df, use_container_width=True)
 
+        # 분석 점수 추이 시각화 추가
+        if len(df) > 1:
+            st.markdown("#### 📈 분석 점수 변동 추이")
+            chart_df = df.copy()
+            st.line_chart(chart_df.set_index("Timestamp")["Score"])
+
         col_dl, col_clr = st.columns([1, 1])
         with col_dl:
             csv = df.to_csv(index=False).encode('utf-8-sig')
@@ -114,10 +120,9 @@ def main():
                 mime="text/csv",
             )
         with col_clr:
-            if st.session_state.history:
-                if st.button("🗑️ 모든 이력 삭제", key="btn_clear_history"):
-                    st.session_state.history = []
-                    st.rerun()
+            if st.button("🗑️ 모든 이력 삭제", key="btn_clear_history"):
+                st.session_state.history = []
+                st.rerun()
 
 if __name__ == "__main__":
     main()
