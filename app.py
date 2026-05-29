@@ -9,11 +9,15 @@ from storage import load_history, save_to_csv, delete_history
 
 def main():
     # 페이지 설정 및 제목
+    # 1. 페이지 기본 설정
     st.set_page_config(
         page_title="LMEA Model Page", 
         page_icon="📺", 
         layout="centered",
         initial_sidebar_state="expanded"
+        page_title="New Service Project",
+        page_icon="🚀",
+        layout="wide"
     )
 
     # 초기 실행 시 파일에서 데이터 불러오기
@@ -21,17 +25,25 @@ def main():
         st.session_state.history = load_history()
     
     # 사이드바에 현재 상태 표시 (앱이 살아있는지 확인용)
+    # 2. 헤더 섹션
+    st.title("🚀 새로운 프로젝트 시작")
+    st.info("이 프로젝트는 기존 튜토리얼과 완전히 분리된 신규 서비스입니다.")
+
+    # 3. 사이드바 - 설정이나 필터링 배치 예정
     with st.sidebar:
         st.title("⚙️ 시스템 상태")
         st.success(f"엔진 가동 중")
         st.info(f"마지막 업데이트: {datetime.now().strftime('%H:%M:%S')}")
         if st.button("🔄 앱 강제 새로고침"):
             st.rerun()
+        st.header("Project Settings")
+        st.write("새로운 환경에서 설정을 구성하세요.")
 
     st.title("📺 LMEA Model Custom Page")
     st.markdown("---")
     st.subheader("Screen 사양 정보 입력")
     st.write("분석하거나 등록하고 싶은 Screen의 상세 정보를 아래에 입력해 주세요.")
+    st.write("여기에 새로운 로직을 구현하면 됩니다.")
 
     # 입력 폼 구성 - 데이터 입력을 그룹화하여 관리
     with st.form("screen_info_form"):
@@ -97,13 +109,45 @@ def main():
     if st.session_state.history:
         st.markdown("---")
         st.subheader("📊 입력 이력 확인 및 내보내기")
-        
+
+        # 리스트 데이터를 Pandas DataFrame으로 변환하여 표 형식으로 출력
         df = pd.DataFrame(st.session_state.history)
-        st.dataframe(df, use_container_width=True)
+
+        # [Pandas 활용] 1. 통계 지표 계산
+        avg_score = df["Score"].mean()
+        max_score = df["Score"].max()
+        total_count = len(df)
+
+        col_stat1, col_stat2, col_stat3 = st.columns(3)
+        col_stat1.metric("총 분석 횟수", f"{total_count}건")
+        col_stat2.metric("평균 점수", f"{avg_score:.1f} pts")
+        col_stat3.metric("최고 점수", f"{max_score:.1f} pts")
+
+        # [Pandas 활용] 2. 그룹화(Groupby)를 통한 패널별 요약
+        st.markdown("#### 📋 패널별 평균 점수 요약")
+        # 'Panel'로 묶어서 'Score'의 평균을 구하고 소수점 첫째자리까지 반올림
+        panel_summary = df.groupby("Panel")["Score"].mean().reset_index()
+        panel_summary.columns = ["Panel Type", "Average Score (pts)"]
+        st.table(panel_summary)
+
+        # [Pandas 활용] 3. 필터링(Filtering) 기능 추가
+        st.markdown("#### 🔍 데이터 필터링")
+        selected_panels = st.multiselect(
+            "조회할 패널을 선택하세요", 
+            options=df["Panel"].unique(), 
+            default=df["Panel"].unique()
+        )
+        
+        # 선택된 패널만 필터링
+        filtered_df = df[df["Panel"].isin(selected_panels)]
+
+        st.markdown("#### 전체 데이터 리스트")
+        st.dataframe(filtered_df.sort_values(by="Timestamp", ascending=False), use_container_width=True)
 
         # 분석 점수 추이 시각화 추가
         if len(df) > 1:
             st.markdown("#### 📈 분석 점수 변동 추이")
+            # Pandas를 활용하면 특정 열을 인덱스로 지정하여 그래프를 그리기 매우 쉬움
             chart_df = df.copy()
             st.line_chart(chart_df.set_index("Timestamp")["Score"])
 
